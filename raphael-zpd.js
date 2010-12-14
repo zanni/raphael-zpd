@@ -71,14 +71,14 @@ RaphaelZPD = function(raphaelPaper, o) {
     /**
     * Set the maximum amount of zoom mousewheel scrolls
     */
-    this.setZoomLimit = function(limit){
+    this.setZoomLimit = function(limit) {
         this.zoomLimit = limit;
     }
 
 	/**
 	 * Handler registration
 	 */
-	this.setupHandlers = function(root){
+	this.setupHandlers = function(root) {
 		this.root.onmousedown = this.handleMouseDown;
 		this.root.onmousemove = this.handleMouseMove;
 		this.root.onmouseup   = this.handleMouseUp;
@@ -86,7 +86,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		//this.root.onmouseout = this.handleMouseUp; // Decomment this to stop the pan functionality when dragging out of the SVG element
 
-		if(navigator.userAgent.toLowerCase().indexOf('webkit') >= 0)
+		if (navigator.userAgent.toLowerCase().indexOf('webkit') >= 0)
 			this.root.addEventListener('mousewheel', this.handleMouseWheel, false); // Chrome/Safari
 		else
 			this.root.addEventListener('DOMMouseScroll', this.handleMouseWheel, false); // Others
@@ -125,7 +125,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	/**
 	 * Sets attributes of an element.
 	 */
-	this.setAttributes = function(element, attributes){
+	this.setAttributes = function(element, attributes) {
 		for (i in attributes)
 			element.setAttributeNS(null, i, attributes[i]);
 	}
@@ -136,7 +136,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	this.handleMouseWheel = function(evt) {
 		if (!ptr.opts.zoom) return;
 
-		if(evt.preventDefault)
+		if (evt.preventDefault)
 			evt.preventDefault();
 
 		evt.returnValue = false;
@@ -145,21 +145,18 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		var delta;
 
-		if(evt.wheelDelta)
+		if (evt.wheelDelta)
 			delta = evt.wheelDelta / 3600; // Chrome/Safari
 		else
 			delta = evt.detail / -90; // Mozilla
 
-        if( delta > 0 ) 
-        {
-            if( ptr.zoomLimit )
-                if( ptr.zoomLimit <= ptr.zoomCurrent ) return;
+        if (delta > 0) {
+            if (ptr.zoomLimit) 
+                if (ptr.zoomLimit <= ptr.zoomCurrent)  return;
             ptr.zoomCurrent++;
-        }
-        else
-        {
-            if( ptr.zoomLimit )
-                if( -ptr.zoomLimit >= ptr.zoomCurrent ) return;
+        } else {
+            if (ptr.zoomLimit)
+                if (-ptr.zoomLimit >= ptr.zoomCurrent) return;
             ptr.zoomCurrent--;
         }
 
@@ -173,10 +170,9 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		// Compute new scale matrix in current mouse position
 		var k = ptr.root.createSVGMatrix().translate(p.x, p.y).scale(z).translate(-p.x, -p.y);
+		ptr.setCTM(g, g.getCTM().multiply(k));
 
-			ptr.setCTM(g, g.getCTM().multiply(k));
-
-		if(!ptr.stateTf)
+		if (!ptr.stateTf)
 			ptr.stateTf = g.getCTM().inverse();
 
 		ptr.stateTf = ptr.stateTf.multiply(k.inverse());
@@ -186,7 +182,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	 * Handle mouse move event.
 	 */
 	this.handleMouseMove = function(evt) {
-		if(evt.preventDefault)
+		if (evt.preventDefault)
 			evt.preventDefault();
 
 		evt.returnValue = false;
@@ -195,14 +191,14 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		var g = svgDoc.getElementById("viewport"+ptr.id);
 
-		if(ptr.state == 'pan') {
+		if (ptr.state == 'pan') {
 			// Pan mode
 			if (!ptr.opts.pan) return;
 
 			var p = ptr.getEventPoint(evt).matrixTransform(ptr.stateTf);
 
 			ptr.setCTM(g, ptr.stateTf.inverse().translate(p.x - ptr.stateOrigin.x, p.y - ptr.stateOrigin.y));
-		} else if(ptr.state == 'move') {
+		} else if (ptr.state == 'move') {
 			// Move mode
 			if (!ptr.opts.drag) return;
 
@@ -218,7 +214,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	 * Handle click event.
 	 */
 	this.handleMouseDown = function(evt) {
-		if(evt.preventDefault)
+		if (evt.preventDefault)
 			evt.preventDefault();
 
 		evt.returnValue = false;
@@ -227,7 +223,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		var g = svgDoc.getElementById("viewport"+ptr.id);
 
-		if(evt.target.tagName == "svg") {
+		if (evt.target.tagName == "svg" || !ptr.opts.drag) {
 			// Pan mode
 			if (!ptr.opts.pan) return;
 
@@ -254,14 +250,14 @@ RaphaelZPD = function(raphaelPaper, o) {
 	 * Handle mouse button release event.
 	 */
 	this.handleMouseUp = function(evt) {
-		if(evt.preventDefault)
+		if (evt.preventDefault)
 			evt.preventDefault();
 
 		evt.returnValue = false;
 
 		var svgDoc = evt.target.ownerDocument;
 
-		if((ptr.state == 'pan' && ptr.opts.pan) || (ptr.state == 'move' && ptr.opts.drag)) {
+		if ((ptr.state == 'pan' && ptr.opts.pan) || (ptr.state == 'move' && ptr.opts.drag)) {
 			// Quit pan mode
 			ptr.state = '';
 		}
@@ -273,34 +269,32 @@ RaphaelZPD = function(raphaelPaper, o) {
 	this.initialized = true;
 }
 
-    Raphael.fn.ZPDPanTo = function(x, y) {
+Raphael.fn.ZPDPanTo = function(x, y) {
+	if (this.canvas.getCTM() == null) {
+		alert('failed');
+		return null;
+	}
 
-        if( this.canvas.getCTM() == null )
-        {
-            alert('failed');
-            return null;
-        }
+	var stateTf = this.canvas.getCTM().inverse();
 
-        var stateTf = this.canvas.getCTM().inverse();
+	var svg = document.getElementsByTagName("svg")[0];
 
-        var svg = document.getElementsByTagName("svg")[0];
+	if (!svg.createSVGPoint) alert("no svg");        
 
-        if( !svg.createSVGPoint ) alert ("no svg");        
+	var p = svg.createSVGPoint();
 
-        var p = svg.createSVGPoint();
+	p.x = x; 
+	p.y = y;
 
-        p.x = x; 
-        p.y = y;
+	p = p.matrixTransform(stateTf);
 
-		p = p.matrixTransform(stateTf);
+	var element = this.canvas;
+	var matrix = stateTf.inverse().translate(p.x, p.y);
 
-        var element = this.canvas;
-        var matrix = stateTf.inverse().translate(p.x, p.y);
+	var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
 
-        var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
+	element.setAttribute("transform", s);
 
-		element.setAttribute("transform", s);
-
-        return this;   
-    }
+	return this;   
+}
 
