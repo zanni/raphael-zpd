@@ -273,21 +273,6 @@ RaphaelZPD = function(raphaelPaper, o) {
 	this.initialized = true;
 }
 
-
-/*	Raphael.fn.ZPD = function(o) {
-		if (o) {
-			for (var key in o) {
-				if (opts[key] !== undefined) {
-					opts[key] = o[key];
-				}
-			}
-		}
-
-		if (!initialized) init(this);
-		return this;
-	}
-*/
-
     Raphael.fn.ZPDPanTo = function(x, y) {
 
         if( this.canvas.getCTM() == null )
