@@ -36,7 +36,14 @@
 var raphaelZPDId = 0;
 
 RaphaelZPD = function(raphaelPaper, o) {
-    
+    function supportsSVG() {
+        return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1")
+    }
+
+    if (!supportsSVG()) {
+        return null;
+    }
+
     // self pointer
     var ptr = this;
 
