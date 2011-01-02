@@ -15,6 +15,8 @@ The options object can be accessed following initialisation as zpd.opts. You may
 
 The ZPD function works by creating an SVG group element (with id 'viewport') and altering the paper's canvas to point at it, causing all following elements created via the paper to be placed within. This will potentially break any plugins or Raphaël functions that rely on paper.canvas pointing to the root SVG object, though I have yet to encounter such a situation.
 
+Clearly, this technique won't work with VML. If you want to use the plugin with a browser that does not natively support SVG, it is suggested that you investigate [svgweb](http://code.google.com/p/svgweb/).
+
 ## Examples
 
 [Treeblob](http://www.lemma.org/experiments/treeblob/) is a contrived example of network visualisation using the panning and zooming functionalities.
