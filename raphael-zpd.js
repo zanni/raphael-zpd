@@ -37,73 +37,66 @@ var raphaelZPDId = 0;
 
 RaphaelZPD = function(raphaelPaper, o) {
     function supportsSVG() {
-        return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1")
+        return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1");
     }
 
     if (!supportsSVG()) {
         return null;
     }
 
-    // self pointer
-    var ptr = this;
+    var me = this;
 
-	this.initialized = false;
-	this.opts = { zoom: true, pan: true, drag: true };
-    this.root = null;
-    this.id   = ++raphaelZPDId;
+	me.initialized = false;
+	me.opts = { 
+		zoom: true, pan: true, drag: true, // Enable/disable core functionalities.
+		zoomThreshold: null, // Zoom [out, in] boundaries. E.g [-100, 10].
+	};
 
-    this.root = raphaelPaper.canvas;
+    me.id   = ++raphaelZPDId;
+    me.root = raphaelPaper.canvas;
 
-    // Construct the object
-    this.gelem = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-	this.gelem.id = 'viewport'+this.id;
-	this.root.appendChild(this.gelem);
-	raphaelPaper.canvas = this.gelem;
+    // Construct g element and supplant paper canvas target
+    me.gelem = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+	me.gelem.id = 'viewport'+me.id;
+	me.root.appendChild(me.gelem);
+	raphaelPaper.canvas = me.gelem;
 
-    this.state = 'none'; 
-    this.stateTarget = null;
-    this.stateOrigin = null;
-    this.stateTf = null;
-    this.zoomLimit = 0;
-    this.zoomCurrent = 0;
+    me.state = 'none'; 
+    me.stateTarget = null;
+    me.stateOrigin = null;
+    me.stateTf = null;
+    me.zoomCurrent = 0;
 
     if (o) {
 		for (key in o) {
-			if (this.opts[key] != undefined) {
-				this.opts[key] = o[key];
+			if (me.opts[key] !== undefined) {
+				me.opts[key] = o[key];
 			}
 		}
 	}
 
-    /**
-    * Set the maximum amount of zoom mousewheel scrolls
-    */
-    this.setZoomLimit = function(limit) {
-        this.zoomLimit = limit;
-    }
-
 	/**
 	 * Handler registration
 	 */
-	this.setupHandlers = function(root) {
-		this.root.onmousedown = this.handleMouseDown;
-		this.root.onmousemove = this.handleMouseMove;
-		this.root.onmouseup   = this.handleMouseUp;
+	me.setupHandlers = function(root) {
+		me.root.onmousedown = me.handleMouseDown;
+		me.root.onmousemove = me.handleMouseMove;
+		me.root.onmouseup   = me.handleMouseUp;
 
 
-		//this.root.onmouseout = this.handleMouseUp; // Decomment this to stop the pan functionality when dragging out of the SVG element
+		//me.root.onmouseout = me.handleMouseUp; // Decomment me to stop the pan functionality when dragging out of the SVG element
 
 		if (navigator.userAgent.toLowerCase().indexOf('webkit') >= 0)
-			this.root.addEventListener('mousewheel', this.handleMouseWheel, false); // Chrome/Safari
+			me.root.addEventListener('mousewheel', me.handleMouseWheel, false); // Chrome/Safari
 		else
-			this.root.addEventListener('DOMMouseScroll', this.handleMouseWheel, false); // Others
+			me.root.addEventListener('DOMMouseScroll', me.handleMouseWheel, false); // Others
 	}
 
 	/**
 	 * Instance an SVGPoint object with given event coordinates.
 	 */
-	this.getEventPoint = function(evt) {
-		var p = this.root.createSVGPoint();
+	me.getEventPoint = function(evt) {
+		var p = me.root.createSVGPoint();
 
 		p.x = evt.clientX;
 		p.y = evt.clientY;
@@ -114,7 +107,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	/**
 	 * Sets the current transform matrix of an element.
 	 */
-	this.setCTM = function(element, matrix) {
+	me.setCTM = function(element, matrix) {
 		var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
 
 		element.setAttribute("transform", s);
@@ -123,7 +116,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	/**
 	 * Dumps a matrix to a string (useful for debug).
 	 */
-	this.dumpMatrix = function(matrix) {
+	me.dumpMatrix = function(matrix) {
 		var s = "[ " + matrix.a + ", " + matrix.c + ", " + matrix.e + "\n  " + matrix.b + ", " + matrix.d + ", " + matrix.f + "\n  0, 0, 1 ]";
 
 		return s;
@@ -132,7 +125,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	/**
 	 * Sets attributes of an element.
 	 */
-	this.setAttributes = function(element, attributes) {
+	me.setAttributes = function(element, attributes) {
 		for (i in attributes)
 			element.setAttributeNS(null, i, attributes[i]);
 	}
@@ -140,8 +133,8 @@ RaphaelZPD = function(raphaelPaper, o) {
 	/**
 	 * Handle mouse move event.
 	 */
-	this.handleMouseWheel = function(evt) {
-		if (!ptr.opts.zoom) return;
+	me.handleMouseWheel = function(evt) {
+		if (!me.opts.zoom) return;
 
 		if (evt.preventDefault)
 			evt.preventDefault();
@@ -158,37 +151,37 @@ RaphaelZPD = function(raphaelPaper, o) {
 			delta = evt.detail / -90; // Mozilla
 
         if (delta > 0) {
-            if (ptr.zoomLimit) 
-                if (ptr.zoomLimit <= ptr.zoomCurrent)  return;
-            ptr.zoomCurrent++;
+            if (me.opts.zoomThreshold) 
+                if (me.opts.zoomThreshold[1] <= me.zoomCurrent) return;
+            me.zoomCurrent++;
         } else {
-            if (ptr.zoomLimit)
-                if (-ptr.zoomLimit >= ptr.zoomCurrent) return;
-            ptr.zoomCurrent--;
+            if (me.opts.zoomThreshold)
+                if (me.opts.zoomThreshold[0] >= me.zoomCurrent) return;
+            me.zoomCurrent--;
         }
 
 		var z = 1 + delta; // Zoom factor: 0.9/1.1
 
-		var g = svgDoc.getElementById("viewport"+ptr.id);
+		var g = svgDoc.getElementById("viewport"+me.id);
 		
-		var p = ptr.getEventPoint(evt);
+		var p = me.getEventPoint(evt);
 
 		p = p.matrixTransform(g.getCTM().inverse());
 
 		// Compute new scale matrix in current mouse position
-		var k = ptr.root.createSVGMatrix().translate(p.x, p.y).scale(z).translate(-p.x, -p.y);
-		ptr.setCTM(g, g.getCTM().multiply(k));
+		var k = me.root.createSVGMatrix().translate(p.x, p.y).scale(z).translate(-p.x, -p.y);
+		me.setCTM(g, g.getCTM().multiply(k));
 
-		if (!ptr.stateTf)
-			ptr.stateTf = g.getCTM().inverse();
+		if (!me.stateTf)
+			me.stateTf = g.getCTM().inverse();
 
-		ptr.stateTf = ptr.stateTf.multiply(k.inverse());
+		me.stateTf = me.stateTf.multiply(k.inverse());
 	}
 
 	/**
 	 * Handle mouse move event.
 	 */
-	this.handleMouseMove = function(evt) {
+	me.handleMouseMove = function(evt) {
 		if (evt.preventDefault)
 			evt.preventDefault();
 
@@ -196,31 +189,31 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		var svgDoc = evt.target.ownerDocument;
 
-		var g = svgDoc.getElementById("viewport"+ptr.id);
+		var g = svgDoc.getElementById("viewport"+me.id);
 
-		if (ptr.state == 'pan') {
+		if (me.state == 'pan') {
 			// Pan mode
-			if (!ptr.opts.pan) return;
+			if (!me.opts.pan) return;
 
-			var p = ptr.getEventPoint(evt).matrixTransform(ptr.stateTf);
+			var p = me.getEventPoint(evt).matrixTransform(me.stateTf);
 
-			ptr.setCTM(g, ptr.stateTf.inverse().translate(p.x - ptr.stateOrigin.x, p.y - ptr.stateOrigin.y));
-		} else if (ptr.state == 'move') {
+			me.setCTM(g, me.stateTf.inverse().translate(p.x - me.stateOrigin.x, p.y - me.stateOrigin.y));
+		} else if (me.state == 'move') {
 			// Move mode
-			if (!ptr.opts.drag) return;
+			if (!me.opts.drag) return;
 
-			var p = ptr.getEventPoint(evt).matrixTransform(g.getCTM().inverse());
+			var p = me.getEventPoint(evt).matrixTransform(g.getCTM().inverse());
 
-			ptr.setCTM(ptr.stateTarget, ptr.root.createSVGMatrix().translate(p.x - ptr.stateOrigin.x, p.y - ptr.stateOrigin.y).multiply(g.getCTM().inverse()).multiply(ptr.stateTarget.getCTM()));
+			me.setCTM(me.stateTarget, me.root.createSVGMatrix().translate(p.x - me.stateOrigin.x, p.y - me.stateOrigin.y).multiply(g.getCTM().inverse()).multiply(me.stateTarget.getCTM()));
 
-			ptr.stateOrigin = p;
+			me.stateOrigin = p;
 		}
 	}
 
 	/**
 	 * Handle click event.
 	 */
-	this.handleMouseDown = function(evt) {
+	me.handleMouseDown = function(evt) {
 		if (evt.preventDefault)
 			evt.preventDefault();
 
@@ -228,35 +221,35 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		var svgDoc = evt.target.ownerDocument;
 
-		var g = svgDoc.getElementById("viewport"+ptr.id);
+		var g = svgDoc.getElementById("viewport"+me.id);
 
-		if (evt.target.tagName == "svg" || !ptr.opts.drag) {
+		if (evt.target.tagName == "svg" || !me.opts.drag) {
 			// Pan mode
-			if (!ptr.opts.pan) return;
+			if (!me.opts.pan) return;
 
-			ptr.state = 'pan';
+			me.state = 'pan';
 
-			ptr.stateTf = g.getCTM().inverse();
+			me.stateTf = g.getCTM().inverse();
 
-			ptr.stateOrigin = ptr.getEventPoint(evt).matrixTransform(ptr.stateTf);
+			me.stateOrigin = me.getEventPoint(evt).matrixTransform(me.stateTf);
 		} else {
 			// Move mode
-			if (!ptr.opts.drag || evt.target.draggable == false) return;
+			if (!me.opts.drag || evt.target.draggable == false) return;
 
-			ptr.state = 'move';
+			me.state = 'move';
 
-			ptr.stateTarget = evt.target;
+			me.stateTarget = evt.target;
 
-			ptr.stateTf = g.getCTM().inverse();
+			me.stateTf = g.getCTM().inverse();
 
-			ptr.stateOrigin = ptr.getEventPoint(evt).matrixTransform(ptr.stateTf);
+			me.stateOrigin = me.getEventPoint(evt).matrixTransform(me.stateTf);
 		}
 	}
 
 	/**
 	 * Handle mouse button release event.
 	 */
-	this.handleMouseUp = function(evt) {
+	me.handleMouseUp = function(evt) {
 		if (evt.preventDefault)
 			evt.preventDefault();
 
@@ -264,25 +257,27 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		var svgDoc = evt.target.ownerDocument;
 
-		if ((ptr.state == 'pan' && ptr.opts.pan) || (ptr.state == 'move' && ptr.opts.drag)) {
+		if ((me.state == 'pan' && me.opts.pan) || (me.state == 'move' && me.opts.drag)) {
 			// Quit pan mode
-			ptr.state = '';
+			me.state = '';
 		}
 	}
 
 
     // end of constructor
-  	ptr.setupHandlers(this.root);
-	this.initialized = true;
+  	me.setupHandlers(me.root);
+	me.initialized = true;
 }
 
 Raphael.fn.ZPDPanTo = function(x, y) {
-	if (this.canvas.getCTM() == null) {
+	var me = this;
+
+	if (me.canvas.getCTM() == null) {
 		alert('failed');
 		return null;
 	}
 
-	var stateTf = this.canvas.getCTM().inverse();
+	var stateTf = me.canvas.getCTM().inverse();
 
 	var svg = document.getElementsByTagName("svg")[0];
 
@@ -295,13 +290,13 @@ Raphael.fn.ZPDPanTo = function(x, y) {
 
 	p = p.matrixTransform(stateTf);
 
-	var element = this.canvas;
+	var element = me.canvas;
 	var matrix = stateTf.inverse().translate(p.x, p.y);
 
 	var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
 
 	element.setAttribute("transform", s);
 
-	return this;   
+	return me;   
 }
 
