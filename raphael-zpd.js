@@ -101,10 +101,11 @@ RaphaelZPD = function(raphaelPaper, o) {
 	events.forEach(function(eventName) {
 		var oldFunc = Raphael.el[eventName];
 		Raphael.el[eventName] = function(fn, scope) {
+			if (fn === undefined) return;
 			var wrap = function(evt) {
-				fn.apply(this, [transformEvent(evt)]);
+				return fn.apply(this, [transformEvent(evt)]);
 			}
-			oldFunc.apply(this, [wrap, scope]);
+			return oldFunc.apply(this, [wrap, scope]);
 		}
 	});
 	
