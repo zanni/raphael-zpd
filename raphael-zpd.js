@@ -79,6 +79,35 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 	overrideElements(raphaelPaper);
 
+	function transformEvent(evt) {
+		if (typeof evt.clientX != "number") return evt;
+
+		svgDoc = evt.target.ownerDocument;
+
+		var g = svgDoc.getElementById("viewport"+me.id);
+
+		var p = me.getEventPoint(evt);
+
+		p = p.matrixTransform(g.getCTM().inverse());
+
+		evt.zoomedX = p.x;
+		evt.zoomedY = p.y;
+
+		return evt;
+	}
+
+	var events = ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'orientationchange', 'touchcancel', 'gesturestart', 'gesturechange', 'gestureend'];
+
+	events.forEach(function(eventName) {
+		var oldFunc = Raphael.el[eventName];
+		Raphael.el[eventName] = function(fn, scope) {
+			var wrap = function(evt) {
+				fn.apply(this, [transformEvent(evt)]);
+			}
+			oldFunc.apply(this, [wrap, scope]);
+		}
+	});
+	
 	//raphaelPaper.canvas = me.gelem;
 
     me.state = 'none'; 
