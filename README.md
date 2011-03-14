@@ -13,9 +13,9 @@ The options object can be accessed following initialisation as zpd.opts. You may
 
 ## Potential Issues
 
-The ZPD function works by creating an SVG group element (with id 'viewport') and altering the paper's canvas to point at it, causing all following elements created via the paper to be placed within. This will potentially break any plugins or Raphaël functions that rely on paper.canvas pointing to the root SVG object, though I have yet to encounter such a situation.
+The coordinates given by mouse events are still relative to the SVG canvas itself. The plugin works around this by adding zoomedX and zoomedY properties to all such events, which are correctly transformed.
 
-Clearly, this technique won't work with VML. If you want to use the plugin with a browser that does not natively support SVG, it is suggested that you investigate [svgweb](http://code.google.com/p/svgweb/).
+The ZPD function works by creating an SVG group element (with id 'viewport' + n) and overriding the constructors on the default Raphäel elements to place them within. Clearly, this technique won't work with VML. If you want to use the plugin with a browser that does not natively support SVG, it is suggested that you investigate [svgweb](http://code.google.com/p/svgweb/).
 
 ## Examples
 
