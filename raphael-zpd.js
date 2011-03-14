@@ -55,11 +55,31 @@ RaphaelZPD = function(raphaelPaper, o) {
     me.id   = ++raphaelZPDId;
     me.root = raphaelPaper.canvas;
 
-    // Construct g element and supplant paper canvas target
     me.gelem = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 	me.gelem.id = 'viewport'+me.id;
 	me.root.appendChild(me.gelem);
-	raphaelPaper.canvas = me.gelem;
+
+	function overrideElements(paper) {
+		var elementTypes = ['circle', 'rect', 'ellipse', 'image', 'text', 'path'];
+		for(var i = 0; i < elementTypes.length; i++) {
+		  overrideElementFunc(paper, elementTypes[i]);
+		}
+	}
+
+	function overrideElementFunc(paper, elementType) {    
+		paper[elementType] = function(oldFunc) {
+		  return function() {
+			var element = oldFunc.apply(paper, arguments);
+			element.gelem = me.gelem;
+			me.gelem.appendChild(element.node);
+			return element;
+		  };
+		}(paper[elementType]);
+	}
+
+	overrideElements(raphaelPaper);
+
+	//raphaelPaper.canvas = me.gelem;
 
     me.state = 'none'; 
     me.stateTarget = null;
@@ -272,12 +292,12 @@ RaphaelZPD = function(raphaelPaper, o) {
 Raphael.fn.ZPDPanTo = function(x, y) {
 	var me = this;
 
-	if (me.canvas.getCTM() == null) {
+	if (me.gelem.getCTM() == null) {
 		alert('failed');
 		return null;
 	}
 
-	var stateTf = me.canvas.getCTM().inverse();
+	var stateTf = me.gelem.getCTM().inverse();
 
 	var svg = document.getElementsByTagName("svg")[0];
 
@@ -290,7 +310,7 @@ Raphael.fn.ZPDPanTo = function(x, y) {
 
 	p = p.matrixTransform(stateTf);
 
-	var element = me.canvas;
+	var element = me.gelem;
 	var matrix = stateTf.inverse().translate(p.x, p.y);
 
 	var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
