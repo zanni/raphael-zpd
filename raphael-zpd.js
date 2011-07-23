@@ -104,7 +104,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 			if (fn === undefined) return;
 			var wrap = function(evt) {
 				return fn.apply(this, [transformEvent(evt)]);
-			}
+			};
 			return oldFunc.apply(this, [wrap, scope]);
 		}
 	});
@@ -140,7 +140,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 			me.root.addEventListener('mousewheel', me.handleMouseWheel, false); // Chrome/Safari
 		else
 			me.root.addEventListener('DOMMouseScroll', me.handleMouseWheel, false); // Others
-	}
+	};
 
 	/**
 	 * Instance an SVGPoint object with given event coordinates.
@@ -152,7 +152,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 		p.y = evt.clientY;
 
 		return p;
-	}
+	};
 
 	/**
 	 * Sets the current transform matrix of an element.
@@ -161,7 +161,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 		var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
 
 		element.setAttribute("transform", s);
-	}
+	};
 
 	/**
 	 * Dumps a matrix to a string (useful for debug).
@@ -170,7 +170,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 		var s = "[ " + matrix.a + ", " + matrix.c + ", " + matrix.e + "\n  " + matrix.b + ", " + matrix.d + ", " + matrix.f + "\n  0, 0, 1 ]";
 
 		return s;
-	}
+	};
 
 	/**
 	 * Sets attributes of an element.
@@ -178,7 +178,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 	me.setAttributes = function(element, attributes) {
 		for (i in attributes)
 			element.setAttributeNS(null, i, attributes[i]);
-	}
+	};
 
 	/**
 	 * Handle mouse move event.
@@ -226,7 +226,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 			me.stateTf = g.getCTM().inverse();
 
 		me.stateTf = me.stateTf.multiply(k.inverse());
-	}
+	};
 
 	/**
 	 * Handle mouse move event.
@@ -258,7 +258,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 			me.stateOrigin = p;
 		}
-	}
+	};
 
 	/**
 	 * Handle click event.
@@ -294,7 +294,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 			me.stateOrigin = me.getEventPoint(evt).matrixTransform(me.stateTf);
 		}
-	}
+	};
 
 	/**
 	 * Handle mouse button release event.
@@ -311,13 +311,13 @@ RaphaelZPD = function(raphaelPaper, o) {
 			// Quit pan mode
 			me.state = '';
 		}
-	}
+	};
 
 
     // end of constructor
   	me.setupHandlers(me.root);
 	me.initialized = true;
-}
+};
 
 Raphael.fn.ZPDPanTo = function(x, y) {
 	var me = this;
@@ -348,5 +348,5 @@ Raphael.fn.ZPDPanTo = function(x, y) {
 	element.setAttribute("transform", s);
 
 	return me;   
-}
+};
 
