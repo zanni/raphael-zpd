@@ -35,7 +35,24 @@
 
 var raphaelZPDId = 0;
 
+/**
+ *	opts : zoom, pan, drag, mobiledrag, mobilepinch, mobilerotate, mobiletransform
+ *
+ */
 RaphaelZPD = function(raphaelPaper, o) {
+
+	// requestAnim shim layer by Paul Irish
+    window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame       || 
+              window.webkitRequestAnimationFrame || 
+              window.mozRequestAnimationFrame    || 
+              window.oRequestAnimationFrame      || 
+              window.msRequestAnimationFrame     || 
+              function(/* function */ callback, /* DOMElement */ element){
+                window.setTimeout(callback, 1000 / 1000);
+              };
+    })();
+
     function supportsSVG() {
         return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1");
     }
@@ -50,14 +67,29 @@ RaphaelZPD = function(raphaelPaper, o) {
 	me.opts = { 
 		zoom: true, pan: true, drag: true, // Enable/disable core functionalities.
 		zoomThreshold: null, // Zoom [out, in] boundaries. E.g [-100, 10].
+		mobiledrag:false,
+		mobilepinch:false,
+		mobilerotate:false,
+		mobiletransform:false
 	};
 
     me.id   = ++raphaelZPDId;
     me.root = raphaelPaper.canvas;
+    var hammer = new Hammer(me.root);
+    //me.background = raphaelPaper.rect(0, 0, getWidth(), getHeight()).attr({"fill":"#FFF"});
+
 
     me.gelem = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 	me.gelem.id = 'viewport'+me.id;
 	me.root.appendChild(me.gelem);
+
+
+	//requestAnimFrame set variable
+	me.currentCTM = null;
+
+    function draw(){
+    	me.setCTM(me.gelem, me.currentCTM);
+    }
 
 	function overrideElements(paper) {
 		var elementTypes = ['circle', 'rect', 'ellipse', 'image', 'text', 'path'];
@@ -116,9 +148,12 @@ RaphaelZPD = function(raphaelPaper, o) {
     me.stateOrigin = null;
     me.stateTf = null;
     me.zoomCurrent = 0;
+    me.pinchOriginEvt = null;
+    me.isTransforming = false;
 
     if (o) {
 		for (key in o) {
+		
 			if (me.opts[key] !== undefined) {
 				me.opts[key] = o[key];
 			}
@@ -133,6 +168,18 @@ RaphaelZPD = function(raphaelPaper, o) {
 		me.root.onmousemove = me.handleMouseMove;
 		me.root.onmouseup   = me.handleMouseUp;
 
+		me.root.ontouchstart = me.handleMouseDown;
+		me.root.ontouchmove = me.handleMouseMove;
+		me.root.ontouchend = me.handleMouseUp;
+
+		hammer.ondragstart = me.handleDragStart;
+		hammer.ondrag = me.handleDrag;
+		hammer.ondragend = me.handeDragEnd;
+
+		hammer.ontransformstart = me.handleTransformStart;
+		hammer.ontransform = me.handleTransform;
+		hammer.ontransformend = me.handleTransformEnd;
+
 
 		//me.root.onmouseout = me.handleMouseUp; // Decomment me to stop the pan functionality when dragging out of the SVG element
 
@@ -140,6 +187,122 @@ RaphaelZPD = function(raphaelPaper, o) {
 			me.root.addEventListener('mousewheel', me.handleMouseWheel, false); // Chrome/Safari
 		else
 			me.root.addEventListener('DOMMouseScroll', me.handleMouseWheel, false); // Others
+	};
+
+	me.getHammerPoint = function(evt){
+				var p = me.root.createSVGPoint();
+				p.x = evt.position.x;
+				p.y = evt.position.y;
+				return p;
+			}
+
+	me.handleDragStart = function(evt){
+		
+		if(me.opts.mobiledrag && !me.isTransforming){
+			me.stateTf = me.gelem.getCTM().inverse();
+
+			me.stateOrigin = me.getHammerPoint(evt).matrixTransform(me.stateTf);
+		}
+		if (evt.preventDefault){
+			evt.originalEvent.preventDefault();
+		}
+	};
+
+	me.handleDrag = function(evt){
+		if(me.opts.mobiledrag && !me.isTransforming){
+
+			var p = me.getHammerPoint(evt).matrixTransform(me.stateTf);
+
+			me.currentCTM = me.stateTf.inverse().translate(p.x - me.stateOrigin.x, p.y - me.stateOrigin.y);
+
+			// requestAnimFrame(function(){
+			// 	draw();
+			// });
+
+			me.setCTM(me.gelem, me.currentCTM);
+		}
+		if (evt.preventDefault){
+			evt.originalEvent.preventDefault();
+		}
+	};
+
+	me.handleDragEnd = function(evt){
+		if(me.opts.mobiledrag && !me.isTransforming){
+
+		}
+		if (evt.preventDefault){
+			evt.originalEvent.preventDefault();
+		}
+	};
+
+	me.handleTransform = function(evt){
+		if(me.opts.mobilepinch ){
+			var p = me.getHammerPoint(evt);
+
+			p = p.matrixTransform(me.gelem.getCTM().inverse());
+
+			if(evt.scale == me.pinchOriginEvt.scale ) return;
+
+			var z = (evt.scale / me.pinchOriginEvt.scale > 1) ? 1.05 : 0.95;
+
+			var k = me.root.createSVGMatrix().translate(p.x, p.y).scale(z).translate(-p.x, -p.y);
+
+			me.currentCTM = me.gelem.getCTM().multiply(k);
+
+			// requestAnimFrame(function(){
+			// 	draw();
+			// });
+
+			me.setCTM(me.gelem, me.currentCTM);
+			
+
+		}
+		if(me.opts.mobilerotate && evt.touches.length == 3){
+			var p = me.getHammerPoint(evt);
+
+			p = p.matrixTransform(me.gelem.getCTM().inverse());
+
+			if(Math.abs(evt.rotation - me.pinchOriginEvt.rotation) < 1 ) return;
+
+			var z = (evt.rotation > me.pinchOriginEvt.rotation) ? 10 : -10;
+
+			var k = me.root.createSVGMatrix().translate(p.x, p.y).rotate(z).translate(-p.x, -p.y);
+
+			me.currentCTM = me.gelem.getCTM().multiply(k);
+
+			requestAnimFrame(function(){
+				draw();
+			});
+			
+			
+			if (!me.stateTf)
+				me.stateTf = g.getCTM().inverse();
+
+			me.stateTf = me.stateTf.multiply(k.inverse());
+		}
+		me.pinchOriginEvt = evt;
+		// if (evt.preventDefault){
+		// 	evt.originalEvent.preventDefault();
+		// }
+	};
+
+	me.handleTransformStart = function(evt){
+
+		if(me.opts.mobilepinch || me.opts.mobilerotate){
+			me.pinchOriginEvt = evt;
+		}
+		// if (evt.preventDefault){
+		// 	evt.originalEvent.preventDefault();
+		// }
+	};
+
+	me.handleTransformEnd = function(evt){
+		if(me.opts.mobilepinch){
+			me.pinchOriginEvt = null;
+		}
+		// if (evt.preventDefault){
+		// 	evt.originalEvent.preventDefault();
+		// }
 	};
 
 	/**
@@ -161,6 +324,8 @@ RaphaelZPD = function(raphaelPaper, o) {
 		var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
 
 		element.setAttribute("transform", s);
+
+		
 	};
 
 	/**
@@ -212,7 +377,7 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		var z = 1 + delta; // Zoom factor: 0.9/1.1
 
-		var g = svgDoc.getElementById("viewport"+me.id);
+		var g = me.gelem;
 		
 		var p = me.getEventPoint(evt);
 
@@ -220,7 +385,12 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		// Compute new scale matrix in current mouse position
 		var k = me.root.createSVGMatrix().translate(p.x, p.y).scale(z).translate(-p.x, -p.y);
-		me.setCTM(g, g.getCTM().multiply(k));
+
+		me.currentCTM = me.gelem.getCTM().multiply(k)
+		requestAnimFrame(function(){
+			draw();
+		});
+		
 
 		if (!me.stateTf)
 			me.stateTf = g.getCTM().inverse();
@@ -237,17 +407,18 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		evt.returnValue = false;
 
-		var svgDoc = evt.target.ownerDocument;
-
-		var g = svgDoc.getElementById("viewport"+me.id);
-
 		if (me.state == 'pan') {
 			// Pan mode
 			if (!me.opts.pan) return;
 
 			var p = me.getEventPoint(evt).matrixTransform(me.stateTf);
 
-			me.setCTM(g, me.stateTf.inverse().translate(p.x - me.stateOrigin.x, p.y - me.stateOrigin.y));
+			me.currentCTM = me.stateTf.inverse().translate(p.x - me.stateOrigin.x, p.y - me.stateOrigin.y);
+
+			requestAnimFrame(function(){
+				draw();
+			});
+			
 		} else if (me.state == 'move') {
 			// Move mode
 			if (!me.opts.drag) return;
@@ -269,17 +440,13 @@ RaphaelZPD = function(raphaelPaper, o) {
 
 		evt.returnValue = false;
 
-		var svgDoc = evt.target.ownerDocument;
-
-		var g = svgDoc.getElementById("viewport"+me.id);
-
 		if (evt.target.tagName == "svg" || !me.opts.drag) {
 			// Pan mode
-			if (!me.opts.pan) return;
+			if (!me.opts.pan || me.opts.mobiledrag) return;
 
 			me.state = 'pan';
 
-			me.stateTf = g.getCTM().inverse();
+			me.stateTf = me.gelem.getCTM().inverse();
 
 			me.stateOrigin = me.getEventPoint(evt).matrixTransform(me.stateTf);
 		} else {
@@ -304,8 +471,6 @@ RaphaelZPD = function(raphaelPaper, o) {
 			evt.preventDefault();
 
 		evt.returnValue = false;
-
-		var svgDoc = evt.target.ownerDocument;
 
 		if ((me.state == 'pan' && me.opts.pan) || (me.state == 'move' && me.opts.drag)) {
 			// Quit pan mode

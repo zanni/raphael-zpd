@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="viewport" content="width=device-width, user-scalable=no" />
+
+
+        <style>
+         body, html, #canvas_container{
+            overflow:hidden; 
+            -webkit-transform: translateZ(0);
+         }
+        </style>
+        <script src="lib/raphael.min.2.1.0.js"></script>
+        <script src="lib/hammer.js"></script>
+        <script src="lib/tiger.js"></script>
+        <script src="raphael-zpd.js"></script>
+        <script>
+
+
+
+            function getWidth(){
+                var viewportwidth;
+                  
+                 // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
+                  
+                 if (typeof window.innerWidth != 'undefined')
+                 {
+                      viewportwidth = window.innerWidth;
+                 }
+                  
+                // IE6 in standards compliant mode (i.e. with a valid doctype as the first line in the document)
+                 
+                 else if (typeof document.documentElement != 'undefined'
+                     && typeof document.documentElement.clientWidth !=
+                     'undefined' && document.documentElement.clientWidth != 0)
+                 {
+                       viewportwidth = document.documentElement.clientWidth;
+                 }
+                  
+                 // older versions of IE
+                  
+                 else
+                 {
+                       viewportwidth = document.getElementsByTagName('body')[0].clientWidth;
+                 }
+                 return viewportwidth;
+            }
+
+            function getHeight(){
+                var viewportheight;
+                  
+                 // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
+                  
+                 if (typeof window.innerWidth != 'undefined')
+                 {
+                      viewportheight = window.innerHeight;
+                 }
+                  
+                // IE6 in standards compliant mode (i.e. with a valid doctype as the first line in the document)
+                 
+                 else if (typeof document.documentElement != 'undefined'
+                     && typeof document.documentElement.clientWidth !=
+                     'undefined' && document.documentElement.clientWidth != 0)
+                 {
+                       viewportheight = document.documentElement.clientHeight
+                 }
+                  
+                 // older versions of IE
+                  
+                 else
+                 {
+                       viewportheight = document.getElementsByTagName('body')[0].clientHeight;
+                 }
+                 return viewportheight;
+            }
+
+            
+
+            window.onload = function () {
+
+
+
+
+                var r = Raphael(document.getElementById("holder"), getWidth(), getHeight());
+                var rect = r.rect(0, 0, getWidth(), getHeight()).attr({"fill":"#FFF", "stroke":"#FFF"});
+                var zpd = new RaphaelZPD(r, { zoom: true, pan: true, drag: false, mobiledrag:true, mobilepinch:true, mobilerotate:false });
+                
+                r.image("plage.jpg", 0, 0, 1024, 1024);
+
+                // for(var i in tiger){
+                //     var path = r.path(tiger[i].path)
+
+                //     path.attr({
+                //         "fill":tiger[i].fill,
+                //         "stroke" : tiger[i].stroke,
+                //         "stroke-width":tiger[i]["stroke-width"]
+                //     });
+                // }
+                // r.forEach(function (el) {
+                //     el.translate(200,200);
+                // });
+
+                // rect.translate(-200, -200);
+            
+          
+
+                
+            };
+        </script>
+    </head>
+    <body>
+        <div id="holder"></div>
+    </body>
+</html>
