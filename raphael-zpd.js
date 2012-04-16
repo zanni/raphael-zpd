@@ -211,15 +211,17 @@ RaphaelZPD = function(raphaelPaper, o) {
 	me.handleDrag = function(evt){
 		if(me.opts.mobiledrag && !me.isTransforming){
 
-			var p = me.getHammerPoint(evt).matrixTransform(me.stateTf);
+			requestAnimFrame(function(){
+				var p = me.getHammerPoint(evt).matrixTransform(me.stateTf);
 
-			me.currentCTM = me.stateTf.inverse().translate(p.x - me.stateOrigin.x, p.y - me.stateOrigin.y);
+				me.currentCTM = me.stateTf.inverse().translate(p.x - me.stateOrigin.x, p.y - me.stateOrigin.y);
+				draw();
+				//me.setCTM(me.gelem, me.currentCTM);
 
-			// requestAnimFrame(function(){
-			// 	draw();
-			// });
+				me.stateTf = me.currentCTM.inverse();
 
-			me.setCTM(me.gelem, me.currentCTM);
+				me.stateOrigin = me.getHammerPoint(evt).matrixTransform(me.stateTf);
+			});
 		}
 		if (evt.preventDefault){
 			evt.originalEvent.preventDefault();
@@ -281,9 +283,9 @@ RaphaelZPD = function(raphaelPaper, o) {
 			me.stateTf = me.stateTf.multiply(k.inverse());
 		}
 		me.pinchOriginEvt = evt;
-		// if (evt.preventDefault){
-		// 	evt.originalEvent.preventDefault();
-		// }
+		if (evt.preventDefault){
+			evt.originalEvent.preventDefault();
+		}
 	};
 
 	me.handleTransformStart = function(evt){
@@ -291,18 +293,18 @@ RaphaelZPD = function(raphaelPaper, o) {
 		if(me.opts.mobilepinch || me.opts.mobilerotate){
 			me.pinchOriginEvt = evt;
 		}
-		// if (evt.preventDefault){
-		// 	evt.originalEvent.preventDefault();
-		// }
+		if (evt.preventDefault){
+			evt.originalEvent.preventDefault();
+		}
 	};
 
 	me.handleTransformEnd = function(evt){
 		if(me.opts.mobilepinch){
 			me.pinchOriginEvt = null;
 		}
-		// if (evt.preventDefault){
-		// 	evt.originalEvent.preventDefault();
-		// }
+		if (evt.preventDefault){
+			evt.originalEvent.preventDefault();
+		}
 	};
 
 	/**

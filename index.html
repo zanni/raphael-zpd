@@ -89,22 +89,22 @@
                 var rect = r.rect(0, 0, getWidth(), getHeight()).attr({"fill":"#FFF", "stroke":"#FFF"});
                 var zpd = new RaphaelZPD(r, { zoom: true, pan: true, drag: false, mobiledrag:true, mobilepinch:true, mobilerotate:false });
                 
-                r.image("plage.jpg", 0, 0, 1024, 1024);
+                //r.image("plage.jpg", 0, 0, 1024, 1024);
 
-                // for(var i in tiger){
-                //     var path = r.path(tiger[i].path)
+                for(var i in tiger){
+                    var path = r.path(tiger[i].path)
 
-                //     path.attr({
-                //         "fill":tiger[i].fill,
-                //         "stroke" : tiger[i].stroke,
-                //         "stroke-width":tiger[i]["stroke-width"]
-                //     });
-                // }
-                // r.forEach(function (el) {
-                //     el.translate(200,200);
-                // });
+                    path.attr({
+                        "fill":tiger[i].fill,
+                        "stroke" : tiger[i].stroke,
+                        "stroke-width":tiger[i]["stroke-width"]
+                    });
+                }
+                r.forEach(function (el) {
+                    el.translate(200,200);
+                });
 
-                // rect.translate(-200, -200);
+                rect.translate(-200, -200);
             
           
 
